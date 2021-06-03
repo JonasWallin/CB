@@ -1,0 +1,27 @@
+{
+  "R": {
+    "Version": "4.0.3",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      }
+    ]
+  },
+  "Packages": {
+    "Rcpp": {
+      "Package": "Rcpp",
+      "Version": "1.0.6",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "dbb5e436998a7eba5a9d682060533338"
+    },
+    "renv": {
+      "Package": "renv",
+      "Version": "0.10.0-46",
+      "Source": "Repository",
+      "Repository": null,
+      "Hash": "c7fbc44c89c367eb761e705f9f475abc"
+    }
+  }
+}
