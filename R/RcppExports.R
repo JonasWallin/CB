@@ -22,7 +22,7 @@ c_basis1_cpp <- function(A) {
 #' Creating a basis from the matrix A
 #' @param A [nxk matrix] must have rank k
 #' @param eps_limit [double] used as a limit of small value
-c_basis2_cpp <- function(A, eps_limit = 10e-6) {
+c_basis2_cpp <- function(A, eps_limit = 1e-10) {
     .Call(`_CB_c_basis2_cpp`, A, eps_limit)
 }
 
