@@ -11,26 +11,26 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// c_basis1_cpp
-Rcpp::List c_basis1_cpp(Eigen::MappedSparseMatrix<double> A);
-RcppExport SEXP _CB_c_basis1_cpp(SEXP ASEXP) {
+// c_basis1
+Rcpp::List c_basis1(Eigen::MappedSparseMatrix<double> A);
+RcppExport SEXP _CB_c_basis1(SEXP ASEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Eigen::MappedSparseMatrix<double> >::type A(ASEXP);
-    rcpp_result_gen = Rcpp::wrap(c_basis1_cpp(A));
+    rcpp_result_gen = Rcpp::wrap(c_basis1(A));
     return rcpp_result_gen;
 END_RCPP
 }
-// c_basis2_cpp
-Rcpp::List c_basis2_cpp(Eigen::MappedSparseMatrix<double> A, double eps_limit);
-RcppExport SEXP _CB_c_basis2_cpp(SEXP ASEXP, SEXP eps_limitSEXP) {
+// c_basis2
+Rcpp::List c_basis2(Eigen::MappedSparseMatrix<double> A, double eps_limit);
+RcppExport SEXP _CB_c_basis2(SEXP ASEXP, SEXP eps_limitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Eigen::MappedSparseMatrix<double> >::type A(ASEXP);
     Rcpp::traits::input_parameter< double >::type eps_limit(eps_limitSEXP);
-    rcpp_result_gen = Rcpp::wrap(c_basis2_cpp(A, eps_limit));
+    rcpp_result_gen = Rcpp::wrap(c_basis2(A, eps_limit));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -47,8 +47,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CB_c_basis1_cpp", (DL_FUNC) &_CB_c_basis1_cpp, 1},
-    {"_CB_c_basis2_cpp", (DL_FUNC) &_CB_c_basis2_cpp, 2},
+    {"_CB_c_basis1", (DL_FUNC) &_CB_c_basis1, 1},
+    {"_CB_c_basis2", (DL_FUNC) &_CB_c_basis2, 2},
     {"_CB_likelihood", (DL_FUNC) &_CB_likelihood, 1},
     {NULL, NULL, 0}
 };

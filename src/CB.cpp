@@ -5,12 +5,14 @@ using namespace Rcpp;
 
 // [[Rcpp::depends(RcppEigen)]]
 
-//'
-//' Creating a basis from the matrix A
+//' @title CB construction
+//' @description The SVD-based constraint basis construction. Algorithm 1 from the reference.
 //' @param A [nxk matrix] must have rank k
+//' @return T (n x n) the basis matrix
+//' @export
 //'
 // [[Rcpp::export]]
-Rcpp::List    c_basis1_cpp(Eigen::MappedSparseMatrix<double> A) {
+Rcpp::List    c_basis1(Eigen::MappedSparseMatrix<double> A) {
 
   Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> P(A.cols());
   P.setIdentity();
@@ -32,7 +34,7 @@ Rcpp::List    c_basis1_cpp(Eigen::MappedSparseMatrix<double> A) {
   Eigen::VectorXd s = svd.singularValues();
   std::vector< Eigen::Triplet<double> > tripletList;
   tripletList.reserve(counter*counter + (A.cols()-counter));
-  
+
   for(int i=0; i< counter; i++){
     int i_i = index[i];
     for(int j=0; j< counter; j++){
@@ -42,7 +44,7 @@ Rcpp::List    c_basis1_cpp(Eigen::MappedSparseMatrix<double> A) {
   for(int i = counter; i < A.outerSize(); i++){
     int i_i = P.indices()[i];
     tripletList.push_back(Eigen::Triplet<double>(i_i, i_i, 1.));
-    
+
   }
   Eigen::SparseMatrix<double> T;
   T.resize(A.cols(), A.cols());
@@ -51,16 +53,16 @@ Rcpp::List    c_basis1_cpp(Eigen::MappedSparseMatrix<double> A) {
   output["T"] = T * P;
   output["S"] = s;
   output["U"] = U;
-  return(output);  
+  return(output);
 }
 
 //'
 //' sorts integervector
 void unique_vector(std::vector<int> & veci){
-  std::sort(veci.begin(), veci.end()); 
+  std::sort(veci.begin(), veci.end());
   std::vector<int>::iterator  it_unique = std::unique(veci.begin(), veci.end());
   veci.resize( std::distance(veci.begin(),it_unique) );
-  
+
 }
 //'
 //' setdiff(A,B) stored in C
@@ -69,21 +71,26 @@ void set_diff(std::vector<int> & A,
               std::vector<int> & B,
               std::vector<int> & C){
   C.resize(0);
-  std::sort(A.begin(), A.end()); 
-  std::sort(B.begin(), B.end()); 
-  std::set_difference(A.begin(), A.end(), 
+  std::sort(A.begin(), A.end());
+  std::sort(B.begin(), B.end());
+  std::set_difference(A.begin(), A.end(),
                       B.begin(), B.end(),
-                      std::inserter(C, C.begin())); 
+                      std::inserter(C, C.begin()));
 }
 
-//'
+//' @title CB construction
+//' @description The SVD-based constraint basis construction for non-overlapping
+//' subsets of constraints. Algorithm 1 from the reference.
 //' Creating a basis from the matrix A
 //' @param A [nxk matrix] must have rank k
 //' @param eps_limit [double] used as a limit of small value
+//' @return T (n x n) the basis matrix
+//' @export
+//'
 // [[Rcpp::export]]
-Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
+Rcpp::List  c_basis2(Eigen::MappedSparseMatrix<double> A,
                              double eps_limit = 1e-10) {
-  
+
   Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> P(A.cols());
   P.setIdentity();
   std::vector<int> index(0);
@@ -103,7 +110,7 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
   for(int i =0; i < A.rows(); i++)
     index_A[i]  = i;
 
-  
+
   // creating a indexing putting relevant columns first so the first
   // k columns spanns A
   int counter_K = 0;
@@ -124,22 +131,22 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
     std::vector<int> col_index_A(0);
     index_temp[0] = index_A[0];
     index_new[0]  = index_A[0];
-    
+
     while(index_new.size()>0){
       std::vector<int> col_index(0);
       for (std::vector<int>::iterator it = index_new.begin() ; it != index_new.end(); ++it){
         for (Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it_A(A_ID_rowm, *it); it_A; ++it_A){
           col_index.push_back(it_A.col());
-        } 
+        }
       }
       unique_vector(col_index);
-      
+
       std::vector<int> row_index(0);
-      for (std::vector<int>::iterator it = col_index.begin() ; it != col_index.end(); ++it){  
+      for (std::vector<int>::iterator it = col_index.begin() ; it != col_index.end(); ++it){
         for (Eigen::SparseMatrix<double,Eigen::ColMajor>::InnerIterator it_A(A_ID, *it); it_A; ++it_A)
           row_index.push_back(it_A.row());
       }
-      
+
       unique_vector(row_index);
       set_diff(row_index, index_temp, index_new);
       for(std::vector<int>::iterator  it  = index_new.begin();
@@ -154,7 +161,7 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
     std::vector<int> col_index_full(counter+1);
     for(int i = 0; i < col_index_A.size(); i++)
       col_index_full[col_index_A[i]] = i;
-    
+
     Eigen::MatrixXd A_id_temp = Eigen::MatrixXd::Zero(index_temp.size(),
                                                       col_index_A.size());
     int i_temp = 0;
@@ -163,9 +170,9 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
       index_largest = index_temp;
 
     }
-    
+
     n_subcluster.push_back(index_temp.size());
-    for (std::vector<int>::iterator it = index_temp.begin() ; it != index_temp.end(); ++it){  
+    for (std::vector<int>::iterator it = index_temp.begin() ; it != index_temp.end(); ++it){
       for (Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it_A(A_ID_rowm, *it); it_A; ++it_A){
         A_id_temp(i_temp, col_index_full[it_A.col()]) = it_A.value();
       }
@@ -176,7 +183,7 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
     Eigen::MatrixXd U = svd.matrixU();
     Eigen::VectorXd s = svd.singularValues();
 
-    
+
     for(int i=0; i < s.size();i++)
       singular_values(counter_K + i) = s(i);
     for(int i=0; i < s.size();i++){
@@ -185,9 +192,9 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
         tripletListU.push_back(Eigen::Triplet<double>(index_temp[j], i_j, U(j,i)));
     }
 
-    
+
     for(int i=0; i< col_index_A.size(); i++){
-      
+
       int i_j ;
       if(i < index_temp.size()){
         i_j = counter_K;
@@ -199,25 +206,25 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
       for(int j=0; j< col_index_A.size(); j++){
         tripletListT.push_back(Eigen::Triplet<double>(index[col_index_A[j]] ,i_j, V(j,i)));
       }
-      
+
     }
-      
+
     std::vector<int> index_A_copy(index_A.size());
-    std::copy ( index_A.data(), 
+    std::copy ( index_A.data(),
                 index_A.data()+index_A.size(),
                 index_A_copy.begin() );
-    set_diff(index_A_copy, 
+    set_diff(index_A_copy,
              index_temp,
              index_A);
   }
-  
+
   //
   // building the basis
   //
   for(int i = counter; i < A.outerSize(); i++){
     int i_i = P.indices()[i];
     tripletListT.push_back(Eigen::Triplet<double>(i_i, i, 1.));
-    
+
   }
   Eigen::SparseMatrix<double> T;
   T.resize(A.cols(), A.cols());
@@ -232,5 +239,5 @@ Rcpp::List  c_basis2_cpp(Eigen::MappedSparseMatrix<double> A,
   output["larget.cluster"] = index_largest;
   //output["number cluster"] = count_subcluster;
   output["cluster.n"] =  n_subcluster;
-  return(output);  
+  return(output);
 }

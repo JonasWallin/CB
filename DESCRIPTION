@@ -9,6 +9,7 @@ Description: Functions for constraint basis construction for Gaussian Markov ran
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 1.0.5), RcppEigen, Matrix, rSPDE, matlab
+Depends: R (>= 3.4.0), INLA, Matrix, methods, matlab
+Imports: Rcpp (>= 1.0.5), RcppEigen, rSPDE, matlab
 LinkingTo: Rcpp, RcppEigen
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

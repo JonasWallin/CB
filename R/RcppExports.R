@@ -10,20 +10,27 @@ NULL
 #'
 NULL
 
-#'
-#' Creating a basis from the matrix A
+#' @title CB construction
+#' @description The SVD-based constraint basis construction. Algorithm 1 from the reference.
 #' @param A [nxk matrix] must have rank k
+#' @return T (n x n) the basis matrix
+#' @export
 #'
-c_basis1_cpp <- function(A) {
-    .Call(`_CB_c_basis1_cpp`, A)
+c_basis1 <- function(A) {
+    .Call(`_CB_c_basis1`, A)
 }
 
-#'
+#' @title CB construction
+#' @description The SVD-based constraint basis construction for non-overlapping
+#' subsets of constraints. Algorithm 1 from the reference.
 #' Creating a basis from the matrix A
 #' @param A [nxk matrix] must have rank k
 #' @param eps_limit [double] used as a limit of small value
-c_basis2_cpp <- function(A, eps_limit = 1e-10) {
-    .Call(`_CB_c_basis2_cpp`, A, eps_limit)
+#' @return T (n x n) the basis matrix
+#' @export
+#'
+c_basis2 <- function(A, eps_limit = 1e-10) {
+    .Call(`_CB_c_basis2`, A, eps_limit)
 }
 
 likelihood <- function(Q) {
