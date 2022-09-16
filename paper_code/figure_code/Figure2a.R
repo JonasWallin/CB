@@ -2,10 +2,6 @@ library(matlab)
 library(optimx)
 library(INLA)
 library(CB)
-library(rSPDE)
-library(doSNOW)
-source("../util_R/nested.utils.R")
-source("../util_R/build_mesh.R")
 
 f1_base <- function(x, a=0.01, k = 1, alpha=1){
   x1x2 <- x[,1]*x[,2]
@@ -41,6 +37,57 @@ round2 <-function(x, digits=2){
   return(format(round(x,digits),nsmall=digits))
 }
 
+loglike_cov <- function(sg,input_data){
+    sigma=exp(sg[1])
+    kappa=exp(sg[2])
+    sigma_n=exp(sg[3])
+    # regularization
+    prior <- - 20* kappa - 2/sigma - 2*log(sigma)
+    K <- cov_deriv(input_data$rx,input_data$ry,input_data$nu,kappa,sigma) + sigma_n^2*matlab::eye(length(input_data$y))
+    R = chol(K)
+    alpha = solve(K,input_data$y)
+    return(0.5*t(input_data$y)%*%alpha + sum(log(diag(R))) + log(2*pi) - prior)
+}
+
+cov_deriv <- function(x,y,nu,kappa,sigma){
+    if(nu==Inf){
+        M1 = (1-kappa^2*y^2)*kappa^2
+        M2 = x*y*kappa^4
+        M4 = (1-x^2*kappa^2)*kappa^2
+        M5 = exp(-0.5*(x^2+y^2)*kappa^2)
+        C <- sigma^2*rbind(cbind(M1,M2),cbind(M2,M4))*rbind(cbind(M5,M5),cbind(M5,M5))
+    } else {
+        h = sqrt(x^2+y^2)
+
+        Cv1k = rSPDE::matern.covariance(h,nu=nu-1,kappa=kappa,sigma=sigma)
+        Cv2k = (sigma^2 / (2^(nu - 3))) * ((kappa*abs(h))^(nu-2)) * besselK(kappa*abs(h), nu-2)
+        Cv2k[h == 0] = sigma^2
+
+        M1 = -(kappa^2*gamma(nu-1)/(2*gamma(nu)))*Cv1k + (kappa^4*y^2/(4*gamma(nu)))*Cv2k
+        M2 = -(kappa^4*x*y/(4*gamma(nu)))*Cv2k
+        M4 = -(kappa^2*gamma(nu-1)/(2*gamma(nu)))*Cv1k + (kappa^4*x^2/(4*gamma(nu)))*Cv2k
+        C <- -rbind(cbind(M1,M2),cbind(M2,M4))
+    }
+    return(C)
+}
+
+mean_cov <- function(param,input_data){
+
+    sigma   = exp(param[1])
+    kappa   = exp(param[2])
+    sigma_n = exp(param[3])
+
+    K_cust <- cov_deriv(input_data$rx,input_data$ry,input_data$nu,kappa,sigma) + sigma_n^2*matlab::eye(2*dim(input_data$rx)[1])
+    k_cust <- cov_deriv(input_data$rxp,input_data$ryp,input_data$nu,kappa,sigma)
+
+    L_cust = chol(K_cust)
+    alpha_cust = solve(L_cust,solve(t(L_cust),input_data$y))
+    meanCust = t(k_cust)%*%alpha_cust
+}
+
+
+
+
 set.seed(23)
 
 #Number of observations
@@ -50,7 +97,7 @@ n.obs = 50
 ns <- c(40,50,60,70,80,90)
 
 #Number of replicates
-n.rep = 50
+n.rep = 5 #50 in paper
 
 #Model parameters
 kappa_true <- sqrt(8*3)/4
@@ -89,10 +136,10 @@ for(i in 1:n.rep){
   input_data <- list(rx = rxg, ry = ryg, rxp = rxp, ryp = ryp, y = Y, nu = 3)
 
   #Estimate covariance-based model and predict
-  neglik <- function(x){CB::loglike_cov(x, input_data)}
+  neglik <- function(x){loglike_cov(x, input_data)}
   param_cov = c(log(sigma_true),log(kappa_true),log(sigma_Y)) #start in true parameters
   param_cov = optim(param_cov, neglik)$par
-  meanCust <- CB::mean_cov(param_cov,input_data)
+  meanCust <- mean_cov(param_cov,input_data)
   errCust_all[i,1] = sqrt(mean( (ytrue - mean(Y))^2 ))
   errCust_all[i,2] = sqrt(mean( (ytrue - meanCust   )^2 ))
   cat('i=',i,', rmse: ', round2(errCust_all[i,1],2),'(mean) ', round2(errCust_all[i,2],2), '(reg GP) \n',sep="")
@@ -105,15 +152,15 @@ for(i in 1:n.rep){
                                             soft_derivatieve=FALSE, alpha=4)
     input_data_spde <- add_observations(Y, obs.loc, input_data_spde)
 
-    neglik <- function(x){res = -CB::likelihood_y_gb(x, input_data_spde)
+    neglik <- function(x){res = -likelihood_y_gb(x, input_data_spde)
       return(res)
     }
     param_spde <- optim(param_spde, neglik, control = list(reltol=1e-3))$par
 
-    m_x <- CB::mean_xy(param_spde, input_data_spde)
+    m_x <- mean_xy(param_spde, input_data_spde)
 
-    Ax = INLA::inla.mesh.1d.A(input_data_spde$mesh,c(grid$x))
-    Ay = INLA::inla.mesh.1d.A(input_data_spde$mesh,c(grid$y))
+    Ax = inla.mesh.1d.A(input_data_spde$mesh,c(grid$x))
+    Ay = inla.mesh.1d.A(input_data_spde$mesh,c(grid$y))
     Ax <- Ax[,2:(input_data_spde$n+1)]
     Ay <- Ay[,2:(input_data_spde$n+1)]
     Apred <- t(KhatriRao(t(Ax),t(Ay)))
@@ -149,9 +196,6 @@ sd_1 <- apply(errCust_all,2,sd)/sqrt(n.rep)
 res2 <- colMeans(errCust_all2)
 sd_2 <- apply(errCust_all2,2,sd)/sqrt(n.rep)
 
-
-pdf(file="~/Dropbox/research/constraint_simulation/neurips/divergence_error.pdf", height=4, width=6)
-par(mfrow=c(1,1))
 plot(ns^2, res[3:(2+length(ns))],type='l', xlab='n',
      col='white',
      ylab = 'RMSE',
@@ -179,4 +223,3 @@ lines(c(ns[1]^2,ns[length(ns)]^2),c(res[1],res[1]),col='blue',lty=3,lwd=2)
 legend(ns[length(ns)]^2 -3800,
        0.95*max(res),legend=c("SPDE method", "Mean","Covariance-based method" ),
        col=c("red", "blue",'black'), lty=c(1,3,2),lwd=2)
-dev.off()

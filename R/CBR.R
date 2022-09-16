@@ -1,23 +1,32 @@
-#alg 1
-#' build the basis matrix
+
+#' @title CB construction
+#'
+#' @description R implementation of the SVD-based constraint basis construction.
+#'
 #' @param A (k x n) the constraint matrix
-#' @param T (n x n) th new basis
-c_basis1 <- function(A){
-  
+#' @return T (n x n) the basis matrix
+#' @export
+c_basis1_R <- function(A){
+
   n <- dim(A)[2]
   T <- Diagonal(rep(1,n),n=n)
   ind <- abs(Matrix::colSums(abs(A)))>0 #fulhack
   A_id <- A[,ind,drop=FALSE]
   USV <- svd(A_id,nv=dim(A_id)[2])
   T[ind, ind] <- (USV$v)
-  T <- cbind(T[,ind,drop=FALSE],T[,ind==FALSE,drop=FALSE]) 
+  T <- cbind(T[,ind,drop=FALSE],T[,ind==FALSE,drop=FALSE])
   return(T)
 }
-#alg 2
-#' build the basis matrix
+
+#' @title CB construction
+#'
+#' @description R implementation of the SVD-based constraint basis construction for non-overlapping
+#' subsets of constraints.
+#'
 #' @param A (k x n) the constraint matrix
-#' @param T (n x n) th new basis
-c_basis2 <- function(A){
+#' @return T (n x n) the basis matrix
+#' @export
+c_basis2_R <- function(A){
   n <- dim(A)[2]
   k <- dim(A)[1]
   T <- Diagonal(rep(1,n),n=n)
@@ -41,9 +50,9 @@ c_basis2 <- function(A){
     index_A <- setdiff(index_A,index)
   }
   T[ind,ind] <- TD
-  T <- cbind(T[,ind,drop=FALSE],T[,ind==FALSE,drop=FALSE]) 
+  T <- cbind(T[,ind,drop=FALSE],T[,ind==FALSE,drop=FALSE])
   index <- Matrix::colSums(abs((A%*%T)))>10^-10
-  T <- cbind(T[,index,drop=FALSE],T[,index==FALSE,drop=FALSE]) 
-  return(T)  
+  T <- cbind(T[,index,drop=FALSE],T[,index==FALSE,drop=FALSE])
+  return(T)
 }
 
