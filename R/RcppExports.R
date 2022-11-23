@@ -10,6 +10,7 @@ NULL
 #'
 NULL
 
+#' @name c_basis1
 #' @title CB construction
 #' @description The SVD-based constraint basis construction. Algorithm 1 from the reference.
 #' @param A [nxk matrix] must have rank k
@@ -20,6 +21,7 @@ c_basis1 <- function(A) {
     .Call(`_CB_c_basis1`, A)
 }
 
+#' @name c_basis2
 #' @title CB construction
 #' @description The SVD-based constraint basis construction for non-overlapping
 #' subsets of constraints. Algorithm 1 from the reference.

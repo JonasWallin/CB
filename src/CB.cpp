@@ -5,6 +5,7 @@ using namespace Rcpp;
 
 // [[Rcpp::depends(RcppEigen)]]
 
+//' @name c_basis1
 //' @title CB construction
 //' @description The SVD-based constraint basis construction. Algorithm 1 from the reference.
 //' @param A [nxk matrix] must have rank k
@@ -78,6 +79,7 @@ void set_diff(std::vector<int> & A,
                       std::inserter(C, C.begin()));
 }
 
+//' @name c_basis2
 //' @title CB construction
 //' @description The SVD-based constraint basis construction for non-overlapping
 //' subsets of constraints. Algorithm 1 from the reference.

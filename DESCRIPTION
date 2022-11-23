@@ -12,4 +12,4 @@ LazyData: true
 Depends: R (>= 3.4.0), INLA, Matrix, methods, matlab
 Imports: Rcpp (>= 1.0.5), RcppEigen, rSPDE, matlab
 LinkingTo: Rcpp, RcppEigen
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.2
